@@ -475,6 +475,7 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
           <ResultRow label="OS" value={r.os} />
           <ResultRow label="Location" value={loc} />
           {r.hostnames?.length > 0 && <ResultRow label="Hostnames" value={r.hostnames.join(', ')} />}
+          {r.domains?.length > 0 && <ResultRow label="Domains" value={r.domains.join(', ')} />}
           {r.tags?.length > 0 && <ResultRow label="Tags" value={r.tags.join(', ')} color="#FF9500" />}
           <ResultRow label="Last Seen" value={r.last_update} />
 
