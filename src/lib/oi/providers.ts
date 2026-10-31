@@ -81,12 +81,12 @@ const DEFS: ProviderDef[] = ([
     defaultModel: 'claude-haiku-4-5-20251001', suggested: ['claude-haiku-4-5-20251001', 'claude-sonnet-5-5', 'claude-opus-5-5'], concurrency: 4,
   },
   {
-    id: 'google', name: 'Google Gemini (free tier)', wire: 'google', base: 'https://generativelanguage.googleapis.com/v1beta',
+    id: 'google', name: 'Google Gemini', wire: 'google', base: 'https://generativelanguage.googleapis.com/v1beta',
     keyUrl: 'https://aistudio.google.com/apikey', keyHint: 'AIza…',
     defaultModel: 'gemini-3.5-flash-lite', suggested: ['gemini-3.5-flash-lite'], concurrency: 1,
   },
   {
-    id: 'openrouter', name: 'OpenRouter (free models)', wire: 'openai', base: 'https://openrouter.ai/api/v1',
+    id: 'openrouter', name: 'OpenRouter', wire: 'openai', base: 'https://openrouter.ai/api/v1',
     keyUrl: 'https://openrouter.ai/keys', keyHint: 'sk-or-…',
     defaultModel: 'openrouter/free', suggested: ['openrouter/free'], concurrency: 1,
   },
