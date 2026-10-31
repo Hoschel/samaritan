@@ -70,7 +70,7 @@ let lastRequestAt = 0;
 /** Counted so the log can show what we are actually sending. */
 const stats = { served: 0, fromCache: 0, sent: 0, refused: 0, failed: 0 };
 
-const snapshotPath = () => process.env.SAMARITAN_NOMINATIM_CACHE || join(process.cwd(), '.cache', 'nominatim.json');
+const snapshotPath = () => process.env.SAMARITAN_NOMINATIM_CACHE || join('/tmp', 'samaritan-cache', 'nominatim.json');
 
 let loaded: Promise<void> | null = null;
 let dirty = false;
