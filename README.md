@@ -24,6 +24,10 @@ research tools together in one interactive MapLibre interface.
   model picker.
 - **Privacy-minded operation:** no sign-up or hosted account is needed; most
   data comes from upstream public feeds and is fetched as features are used.
+- **Passive host intelligence:** the free Shodan InternetDB index works without
+  a key; an optional `SHODAN_API_KEY` adds indexed service banners,
+  product/version, CVEs and host metadata. Samaritan does not actively probe
+  the target in either mode.
 
 Data availability, update cadence and geographic coverage vary by provider.
 A public feed can be delayed, quota-limited, temporarily offline or restricted
@@ -37,28 +41,30 @@ keyless sources such as USGS, ADS-B feeds, GDELT/RSS, certificate-transparency
 logs, public RDAP/DNS resolvers, CelesTrak, public blockchain explorers and
 other open datasets already represented in the source code.
 
-Optional credentials are supported only for integrations with a usable
-public/free access path or a no-cost tier (for example selected Gemini models,
-OpenSky account access, NASA FIRMS, N2YO, AIS Stream, Cloudflare Radar and
-public blockchain data providers). They are **not required** for the baseline
-experience. A free tier can still have request limits, eligibility
-requirements, attribution obligations or terms that change. Do not enter or
-enable paid plans when operating under a zero-cost requirement.
+Optional credentials enhance public-feed quotas and data richness. They
+include OpenSky, NASA FIRMS, N2YO, AIS Stream, Cloudflare Radar, public
+blockchain data providers and the optional Shodan host API. Shodan falls back
+to its free InternetDB index when no key is configured. The baseline app does
+not need these keys. Some services have request limits, eligibility
+requirements or paid account terms; check the provider's current conditions
+before enabling them.
 
 For AI:
 
 | Provider | Cost model in Samaritan | Notes |
 | --- | --- | --- |
 | Ollama | Local inference; no API fee | Default provider; hardware and electricity are yours. |
-| Google Gemini | Eligible free-tier model only | Requires a free-tier API key; subject to quota and data-use terms. |
-| OpenRouter | Free router and `:free` models only | Low daily request limits; model availability changes. |
+| Google Gemini | Eligible free-tier model by default | Requires a key for cloud use; subject to provider quota and terms. |
+| OpenRouter | Free router and `:free` models by default | Free-model availability and limits can change. |
+| OpenAI, Anthropic, Groq, DeepSeek, xAI, Mistral, Qwen | Optional visitor-owned BYOK | Hidden by default; set `SAMARITAN_ALLOW_PAID_AI=true` to enable. Visitors supply their own keys and may incur provider charges. |
 | Demo | Scripted development fallback | Not a real language model. |
 
-The UI filters OpenRouter model choices to the free router and models ending
-in `:free`. Do not add billing credits or select paid models if you intend to
-keep cloud inference at zero cost. OI workflows can make multiple model calls,
-so cloud quotas may be exhausted quickly; Ollama is recommended for heavier
-use.
+The baseline experience remains local/free. The operator can opt in to the
+already-integrated BYOK providers by setting `SAMARITAN_ALLOW_PAID_AI=true`
+and restarting the application. With the flag off, Gemini and OpenRouter are
+restricted to the configured free-tier model and free model IDs. OI workflows
+can make multiple model calls, so cloud usage may consume a visitor's quota or
+paid account balance; Ollama is recommended for heavier no-cloud-cost use.
 
 ## Quick start — local development
 
