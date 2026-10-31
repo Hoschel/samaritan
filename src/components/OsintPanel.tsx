@@ -453,16 +453,17 @@ function OsintPanelInner({ isMobile, onSweepVisualize, onScanGeolocate }: OsintP
     if (!results) return null;
     const r = results;
 
-    // ── PORT INDEX (read-only public InternetDB record) ──
+    // ── PORT INDEX (read-only Shodan / InternetDB host record) ──
     if (activeTab === 'scanner') {
       const ports: any[] = Array.isArray(r.ports) ? r.ports : [];
       const loc = [r.location?.city, r.location?.country].filter(Boolean).join(', ');
+      const indexLabel = r.source === 'shodan' ? 'SHODAN HOST INDEX · ENRICHED' : 'PUBLIC INTERNETDB INDEX · NO KEY';
       return (
         <div>
           <SectionHeader title="HOST INFO" icon={Server} color="#00E5FF" />
           <div className="mb-1.5">
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider border ${'bg-[#FF9500]/10 text-[#FF9500] border-[#FF9500]/30'}`}>
-              PUBLIC HOST INDEX · NO KEY
+              {indexLabel}
             </span>
           </div>
           {r.note && <div className="mb-1.5 text-[10px] font-mono text-[var(--text-muted)]">{r.note}</div>}
