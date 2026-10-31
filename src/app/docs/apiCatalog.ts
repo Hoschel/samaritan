@@ -432,7 +432,7 @@ export const API_GROUPS: ApiGroup[] = [
       {
         path: '/api/osint/portscan',
         method: 'GET',
-        summary: 'Read-only lookup in the public Shodan InternetDB index. Returns indexed open ports and CPE/CVE references without actively probing the target; no key required.',
+        summary: 'Read-only lookup in the Shodan host index. Uses the full host API when SHODAN_API_KEY is configured (service banners, product/version, CVEs and host metadata), otherwise falls back to the free InternetDB index. No active probing.',
         params: [{ name: 'target', required: true, desc: 'Public IP address or hostname to look up in the index.', example: '8.8.8.8' }],
         returns: ['target', 'ip', 'source', 'ports', 'hostnames', 'domains', 'org', 'isp', 'asn', 'os', 'location', 'cpes', 'vulns', 'tags', 'last_update', 'note'],
       },
@@ -625,7 +625,7 @@ export const API_GROUPS: ApiGroup[] = [
     id: 'oi',
     title: 'OI (Assist & Prediction)',
     blurb:
-      'Samaritan OI is a local-first AI assistant and prediction engine. Ollama runs on your own machine without an API key; optional cloud choices are restricted to eligible Gemini free-tier and OpenRouter free models. Keys are sent in request headers and never stored. Also served as an MCP server at /api/mcp; see OI guide.',
+      'Samaritan OI is a local-first AI assistant and prediction engine. Ollama and free-tier Gemini/OpenRouter models work by default. The operator can explicitly enable visitor-owned BYOK providers (OpenAI, Anthropic, Groq, DeepSeek, xAI, Mistral and Qwen) with SAMARITAN_ALLOW_PAID_AI=true. Keys are sent in request headers and never stored. Also served as an MCP server at /api/mcp; see OI guide.',
     endpoints: [
       {
         path: '/api/oi',
@@ -636,10 +636,10 @@ export const API_GROUPS: ApiGroup[] = [
       {
         path: '/api/oi/models',
         method: 'POST',
-        summary: 'The local Ollama model list or the free models available from an optional cloud provider. Cloud keys are checked before a run starts.',
+        summary: 'The configured Ollama and cloud-provider model list. Free/local choices work by default; visitor-owned BYOK providers and paid model IDs require SAMARITAN_ALLOW_PAID_AI=true. Cloud keys are checked before a run starts.',
         returns: ['provider', 'ok', 'listed', 'models', 'default'],
         headers: { 'X-OI-Provider': 'ollama' },
-        notes: 'Providers: `ollama` (local, no key), `google` (Gemini free-tier model only) and `openrouter` (models marked free only). Paid model IDs are rejected by the API. Cloud providers may require a key and enforce their own quotas. 20 checks per minute per address.',
+        notes: 'By default: `ollama` (local, no key), `google` (Gemini free-tier model) and `openrouter` (free router / models marked free). Set `SAMARITAN_ALLOW_PAID_AI=true` to expose OpenAI, Anthropic, Groq, DeepSeek, xAI, Mistral and Qwen, and to allow paid Gemini/OpenRouter model IDs. These are visitor-owned BYOK accounts; providers may charge their account and enforce quotas. 20 checks per minute per address.',
         bodyExample: `{
   "provider": "ollama"
 }`,
