@@ -38,6 +38,12 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  // HLS instances must not outlive the selected camera or the viewer.
+  useEffect(() => () => {
+    hlsRef.current?.destroy();
+    hlsRef.current = null;
+  }, []);
+
   const externalFeedUrl = camera?.external_url || camera?.feed_url;
   const hostedOffPlatform = isHostedOffPlatform(camera);
 
@@ -129,6 +135,8 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
           fragLoadingMaxRetry: 3,
         });
         hlsRef.current = hls;
+        let networkRecoveries = 0;
+        let mediaRecoveries = 0;
         hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(camera.stream_url));
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setLoading(false);
@@ -138,11 +146,13 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal) return;
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveries < 2) {
+            networkRecoveries += 1;
             hls.startLoad();
             return;
           }
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 1) {
+            mediaRecoveries += 1;
             hls.recoverMediaError();
             return;
           }
