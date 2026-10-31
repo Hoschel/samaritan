@@ -336,6 +336,12 @@ function NewsCard({ item, now, open, wide, onToggle, onLocate }: {
   const [videoFailed, setVideoFailed] = useState(false);
   const kind = ALERT_KINDS[item.alertKind];
   const video = item.media?.video && !videoFailed ? item.media.video : null;
+  const sourceBlocs = new Set([item.bloc, ...item.carriers.map(c => c.bloc)].filter(Boolean));
+  const corroborationLabel = item.carriers.length === 0
+    ? 'SINGLE SOURCE · UNVERIFIED'
+    : sourceBlocs.size > 1
+      ? 'MULTIPLE SOURCE PERSPECTIVES'
+      : 'MULTIPLE REPORTS · INDEPENDENCE UNCONFIRMED';
 
   return (
     <article
@@ -363,6 +369,9 @@ function NewsCard({ item, now, open, wide, onToggle, onLocate }: {
         )}
 
         <div className="mt-1.5 flex flex-wrap items-center gap-1">
+          <Chip color={item.carriers.length > 0 ? '#00E5FF' : '#FF9500'} title="Corroboration indicator only; not an independent fact-check">
+            {corroborationLabel}
+          </Chip>
           {item.alertKind !== 'news' && <Chip color={kind.color}>{kind.label}</Chip>}
           {item.place && (
             <Chip color={kind.color} title={`Pinned to ${item.place.label} — the place the post names`}>
@@ -397,6 +406,17 @@ function NewsCard({ item, now, open, wide, onToggle, onLocate }: {
           )}
         </div>
       </button>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/5 px-2.5 py-1.5 text-[9px] font-mono text-[#8A8880]">
+        <time dateTime={item.published} title="Publisher-provided publication time">
+          PUBLISHED {Number.isFinite(Date.parse(item.published)) ? new Date(item.published).toLocaleString() : 'TIME UNAVAILABLE'}
+        </time>
+        {item.link ? (
+          <a href={item.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[var(--cyan-primary)] hover:underline" aria-label={`Open original source: ${item.source_name}`}>
+            SOURCE: {item.source_name} <ExternalLink className="h-2.5 w-2.5" />
+          </a>
+        ) : <span>SOURCE LINK UNAVAILABLE</span>}
+      </div>
 
       {open && (
         <div className="px-2.5 pb-2.5 space-y-2">
