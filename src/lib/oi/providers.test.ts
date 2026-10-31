@@ -66,6 +66,25 @@ describe('keys and models', () => {
     expect(isAllowedProviderModel('openai', 'gpt-5-mini')).toBe(false);
     expect(isAllowedProviderModel('anthropic', 'claude-sonnet')).toBe(false);
   });
+
+  it('exposes BYOK providers and paid model IDs only after an explicit operator opt-in', () => {
+    vi.stubEnv('SAMARITAN_ALLOW_PAID_AI', 'true');
+    try {
+      expect(isProviderId('openai')).toBe(true);
+      expect(isProviderId('anthropic')).toBe(true);
+      expect(isProviderId('groq')).toBe(true);
+      expect(isProviderId('deepseek')).toBe(true);
+      expect(isProviderId('xai')).toBe(true);
+      expect(isProviderId('mistral')).toBe(true);
+      expect(isProviderId('qwen')).toBe(true);
+      expect(isAllowedProviderModel('openai', 'gpt-5-mini')).toBe(true);
+      expect(isAllowedProviderModel('anthropic', 'claude-sonnet-5-5')).toBe(true);
+      expect(isAllowedProviderModel('google', 'gemini-2.5-pro')).toBe(true);
+      expect(isAllowedProviderModel('openrouter', 'vendor/model-paid')).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
 
 describe('createChat', () => {
