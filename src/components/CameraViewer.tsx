@@ -105,24 +105,74 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
     }
 
     if (streamType === 'hls' && camera.stream_url) {
-      if (Hls.isSupported() && videoRef.current) {
-        const hls = new Hls({ enableWorker: false });
+      const video = videoRef.current;
+      if (!video) {
+        setError(true);
+        setLoading(false);
+        return;
+      }
+
+      // Prefer hls.js on Chromium/Firefox; use native HLS on Safari and
+      // browsers with a native HLS decoder. Never leave the viewer spinning
+      // forever when neither playback path is available.
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 30,
+          maxBufferLength: 12,
+          manifestLoadingTimeOut: 12000,
+          levelLoadingTimeOut: 12000,
+          fragLoadingTimeOut: 20000,
+          manifestLoadingMaxRetry: 3,
+          levelLoadingMaxRetry: 3,
+          fragLoadingMaxRetry: 3,
+        });
         hlsRef.current = hls;
-        hls.loadSource(camera.stream_url);
-        hls.attachMedia(videoRef.current);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(camera.stream_url));
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setLoading(false);
-          videoRef.current?.play().catch(() => {});
+          video.play().catch(() => {
+            // Autoplay may be blocked; the native video controls remain available.
+          });
         });
-        hls.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) setError(true);
-        });
-      } else if (videoRef.current?.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = camera.stream_url;
-        videoRef.current.addEventListener('loadedmetadata', () => {
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+            return;
+          }
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+            return;
+          }
+          hls.destroy();
+          if (hlsRef.current === hls) hlsRef.current = null;
           setLoading(false);
-          videoRef.current?.play().catch(() => {});
+          setError(true);
         });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        const onReady = () => {
+          setLoading(false);
+          video.play().catch(() => {});
+        };
+        const onError = () => {
+          setLoading(false);
+          setError(true);
+        };
+        video.addEventListener('loadedmetadata', onReady);
+        video.addEventListener('error', onError);
+        video.src = camera.stream_url;
+        video.load();
+        return () => {
+          video.removeEventListener('loadedmetadata', onReady);
+          video.removeEventListener('error', onError);
+          video.removeAttribute('src');
+          video.load();
+        };
+      } else {
+        setLoading(false);
+        setError(true);
       }
       return;
     }
@@ -324,6 +374,9 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
                 autoPlay
                 muted
                 playsInline
+                controls
+                onLoadedData={() => setLoading(false)}
+                onError={() => { setLoading(false); setError(true); }}
               />
             ) : streamType === 'mjpeg' && camera.stream_url ? (
               <img
@@ -341,6 +394,8 @@ export default function CameraViewer({ camera, onClose, onLocate, besideOi = fal
                 muted
                 playsInline
                 loop
+                onLoadedData={() => setLoading(false)}
+                onError={() => { setLoading(false); setError(true); }}
               />
             ) : streamType === 'iframe' && streamUrl ? (
               <iframe
