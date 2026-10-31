@@ -30,9 +30,11 @@ export function loadCameraCatalog(onBatch: (cameras: CatalogCamera[]) => void, o
       if (controller.signal.aborted) return;
       onError();
     }
-    // Three attempts total, with backoff. No endless retries against dead feeds.
-    if (remaining.length && attempts < 3 && !controller.signal.aborted) {
-      timer = setTimeout(() => void load(remaining), attempts * 15_000);
+    // Up to eight bounded attempts. The API returns pending regions separately,
+    // so each retry requests only regions that have not produced a usable result.
+    if (remaining.length && attempts < 8 && !controller.signal.aborted) {
+      const delay = Math.min(60_000, attempts * 10_000);
+      timer = setTimeout(() => void load(remaining), delay);
     }
   };
   void load(['all']);
