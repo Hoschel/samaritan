@@ -29,7 +29,7 @@ const INVALIDATED_LEGACY_REGIONS = new Set(['texas', 'florida', 'georgia', 'nort
 
 /** Overridable so a test never writes into the real cache directory. */
 export const snapshotPath = () =>
-  process.env.SAMARITAN_CCTV_SNAPSHOT || join(process.cwd(), '.cache', 'cctv-catalog.json');
+  process.env.SAMARITAN_CCTV_SNAPSHOT || join('/tmp', 'samaritan-cache', 'cctv-catalog.json');
 
 interface SnapshotFile {
   version: number;
