@@ -37,9 +37,10 @@ interface ProviderDef extends ProviderInfo {
 }
 
 /**
- * Only no-cost or locally hosted inference providers are exposed by Samaritan.
- * Free cloud tiers can change their quotas/models; Ollama is the unlimited-
- * billing fallback because inference runs on the operator's own hardware.
+ * Local-first inference with an explicit opt-in for visitor-owned BYOK providers.
+ * Free/local choices remain the default; paid providers are hidden and rejected
+ * unless the operator sets SAMARITAN_ALLOW_PAID_AI=true. Provider keys are
+ * supplied per request and are never persisted by Samaritan.
  */
 const LOCAL_OLLAMA_DEFAULT = 'http://127.0.0.1:11434/v1';
 const OLLAMA_ALLOWED_HOSTS = new Set([
@@ -122,22 +123,27 @@ const DEFS: ProviderDef[] = ([
   .filter(d => d.id !== 'demo' || process.env.NODE_ENV !== 'production')
   .map(d => ({ ...d, needsKey: d.id !== 'demo' && d.id !== 'ollama' }));
 
-// Provider implementations from the upstream app remain in this module for
-// migration compatibility, but the API and UI are allow-listed to free/local
-// choices only. A caller cannot select a paid provider through Samaritan.
+// Keep the no-cost experience as the default. Other provider implementations
+// remain bundled but hidden unless the operator explicitly opts in.
 const FREE_PROVIDER_IDS = new Set<ProviderId>(['ollama', 'google', 'openrouter', 'demo']);
 const BY_ID = new Map(DEFS.map(d => [d.id, d]));
+
+export function paidAiEnabled(): boolean {
+  return process.env.SAMARITAN_ALLOW_PAID_AI === 'true';
+}
+
+const providerEnabled = (id: ProviderId) => FREE_PROVIDER_IDS.has(id) || paidAiEnabled();
 
 const publicInfo = (d: ProviderDef): ProviderInfo => ({
   id: d.id, name: d.name, keyUrl: d.keyUrl, keyHint: d.keyHint, defaultModel: d.defaultModel,
   suggested: d.suggested, concurrency: d.concurrency, needsKey: d.needsKey,
 });
 
-/** Public descriptions, without the wire details. */
-export const PROVIDERS: ProviderInfo[] = DEFS.filter(d => FREE_PROVIDER_IDS.has(d.id)).map(publicInfo);
+/** Public descriptions, without the wire details. Evaluated at process start. */
+export const PROVIDERS: ProviderInfo[] = DEFS.filter(d => providerEnabled(d.id)).map(publicInfo);
 
 export function isProviderId(v: unknown): v is ProviderId {
-  return typeof v === 'string' && FREE_PROVIDER_IDS.has(v as ProviderId) && BY_ID.has(v as ProviderId);
+  return typeof v === 'string' && BY_ID.has(v as ProviderId) && providerEnabled(v as ProviderId);
 }
 
 export function providerInfo(id: ProviderId): ProviderInfo {
@@ -155,21 +161,23 @@ export function isPlausibleModel(model: unknown): model is string {
     && !model.includes('..');
 }
 
-/** Enforce Samaritan's free/local model policy at the API boundary, not only in the picker. */
+/** Enforce provider visibility and model policy at the API boundary, not only in the picker. */
 export function isAllowedProviderModel(provider: ProviderId, model: string): boolean {
-  if (!isPlausibleModel(model)) return false;
+  if (!isPlausibleModel(model) || !providerEnabled(provider)) return false;
   switch (provider) {
     case 'ollama':
       // Local models are installed by the operator; no hosted inference bill is incurred.
       return true;
     case 'google':
-      return model === 'gemini-3.5-flash-lite';
+      return paidAiEnabled() || model === 'gemini-3.5-flash-lite';
     case 'openrouter':
-      return model === 'openrouter/free' || model.endsWith(':free');
+      return paidAiEnabled() || model === 'openrouter/free' || model.endsWith(':free');
     case 'demo':
       return model === 'scripted' && process.env.NODE_ENV !== 'production';
     default:
-      return false;
+      // OpenAI, Anthropic, Groq, DeepSeek, xAI, Mistral and Qwen require
+      // the explicit deployment-level BYOK opt-in and a visitor-supplied key.
+      return paidAiEnabled();
   }
 }
 
@@ -548,9 +556,9 @@ export async function listModels(provider: ProviderId, key: string, f: FetchLike
   const seen = new Set<string>();
   const chat = models
     .filter(m => isPlausibleModel(m.id) && !NOT_CHAT.test(m.id)
-      && (def.id !== 'google' || def.suggested.includes(m.id))
+      && (def.id !== 'google' || paidAiEnabled() || def.suggested.includes(m.id))
       && (def.id !== 'ollama' || def.suggested.includes(m.id) || !['qwen3:4b','llama3.2:3b','gemma3:4b'].includes(m.id))
-      && (def.id !== 'openrouter' || m.id === 'openrouter/free' || m.id.endsWith(':free'))
+      && (def.id !== 'openrouter' || paidAiEnabled() || m.id === 'openrouter/free' || m.id.endsWith(':free'))
       && !seen.has(m.id) && seen.add(m.id))
     .slice(0, 500);
   // Suggested models first, in their order, then the rest A–Z.
