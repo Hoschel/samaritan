@@ -1,0 +1,77 @@
+name: samaritan
+
+services:
+  samaritan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: samaritan
+    ports:
+      - "${SAMARITAN_PORT:-3000}:3000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      SCANNER_URL: http://samaritan-scanner:4000
+      SCANNER_KEY: ${SCANNER_KEY:?Set SCANNER_KEY in .env before starting}
+      INTEL_URL: http://samaritan-intel:4000
+      SAMARITAN_OLLAMA_URL: ${SAMARITAN_OLLAMA_URL:-http://host.docker.internal:11434/v1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      samaritan-scanner:
+        condition: service_healthy
+      samaritan-intel:
+        condition: service_healthy
+    restart: unless-stopped
+
+  samaritan-scanner:
+    build:
+      context: ./scanner
+      dockerfile: Dockerfile
+    container_name: samaritan-scanner
+    environment:
+      NODE_ENV: production
+      SCANNER_PORT: "4000"
+      SCANNER_HOST: 0.0.0.0
+      SCANNER_KEY: ${SCANNER_KEY:?Set SCANNER_KEY in .env before starting}
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  samaritan-intel:
+    build:
+      context: ./intel
+      dockerfile: Dockerfile
+    container_name: samaritan-intel
+    environment:
+      NODE_ENV: production
+      INTEL_PORT: "4000"
+      INTEL_HOST: 0.0.0.0
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  # Optional Ollama container. Set SAMARITAN_OLLAMA_URL in .env to:
+  # http://samaritan-ollama:11434/v1 before enabling this profile.
+  samaritan-ollama:
+    image: ollama/ollama:latest
+    container_name: samaritan-ollama
+    profiles: ["local-ai"]
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama-data:/root/.ollama
+    expose:
+      - "11434"
+    restart: unless-stopped
+
+volumes:
+  ollama-data:
+
+# Services communicate over the private default Compose network. No external
+# No external analytics, paid scanner or Shodan API key is required.

@@ -1,0 +1,16 @@
+{
+  "name": "Samaritan — Global Intelligence Workspace",
+  "short_name": "Samaritan",
+  "description": "Open-source global OSINT and situational-awareness workspace.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070A10",
+  "theme_color": "#D4AF37",
+  "orientation": "any",
+  "categories": ["security", "intelligence", "analytics", "news"],
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
