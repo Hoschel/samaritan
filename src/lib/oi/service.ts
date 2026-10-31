@@ -84,7 +84,7 @@ export function credentials(req: Request, body: Record<string, unknown> = {}): C
   if (modelRaw && !isPlausibleModel(modelRaw)) return { error: 'That does not look like a model id.' };
   const provider = providerRaw ? (providerRaw.toLowerCase() as ProviderId) : undefined;
   if (provider && modelRaw && !isAllowedProviderModel(provider, modelRaw)) {
-    return { error: 'Samaritan only permits local Ollama models, the configured Gemini free-tier model, or OpenRouter models marked free.' };
+    return { error: 'This provider or model is disabled. Local/free models work by default; set SAMARITAN_ALLOW_PAID_AI=true to enable visitor-owned BYOK providers and paid models.' };
   }
   return { provider, key: key || undefined, model: modelRaw || undefined };
 }
@@ -112,7 +112,7 @@ export function startPrediction(args: PredictArgs, creds: Credentials, ip: strin
   if (!creds.provider) return { ok: false, status: 400, error: 'Choose a provider (X-OI-Provider).' };
   const info = providerInfo(creds.provider);
   const selectedModel = creds.model || info.defaultModel;
-  if (!isAllowedProviderModel(creds.provider, selectedModel)) return { ok: false, status: 400, error: 'This model is not available under Samaritan’s free/local provider policy.' };
+  if (!isAllowedProviderModel(creds.provider, selectedModel)) return { ok: false, status: 400, error: 'This provider or model is disabled. The operator must enable SAMARITAN_ALLOW_PAID_AI=true for paid/BYOK models.' };
   if (!creds.key && info.needsKey) return { ok: false, status: 401, error: `An API key for ${info.name} is required (X-OI-Key or Authorization: Bearer).` };
   const depth = oneOf(args.depth, ['quick', 'standard', 'deep'] as const, 'standard') as Depth;
   return startRun({
@@ -162,7 +162,7 @@ export function describe(origin: string) {
   return {
     name: 'SAMARITAN OI',
     version: OI_VERSION,
-    about: 'A prediction engine on live SAMARITAN intelligence: the actors who decide a question, simulated against each other in parallel worlds. Use local Ollama or an eligible free-tier provider.',
+    about: 'A prediction engine on live SAMARITAN intelligence: the actors who decide a question, simulated against each other in parallel worlds. Local Ollama and free-tier models are available by default; visitor-owned BYOK providers can be enabled by the operator.',
     credit: CREDIT,
     providers: PROVIDERS.map(p => ({ id: p.id, name: p.name, default_model: p.defaultModel, suggested_models: p.suggested, key_url: p.keyUrl })),
     depths: (Object.keys(DEPTHS) as Depth[]).map(d => ({ id: d, ...DEPTHS[d], model_calls: estimateCalls(d) })),
