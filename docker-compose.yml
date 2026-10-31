@@ -20,6 +20,8 @@ services:
       SCANNER_KEY: ${SCANNER_KEY:?Set SCANNER_KEY in .env before starting}
       INTEL_URL: http://samaritan-intel:4000
       SAMARITAN_OLLAMA_URL: ${SAMARITAN_OLLAMA_URL:-http://host.docker.internal:11434/v1}
+      SAMARITAN_ALLOW_PAID_AI: ${SAMARITAN_ALLOW_PAID_AI:-false}
+      SHODAN_API_KEY: ${SHODAN_API_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
